@@ -41,3 +41,16 @@ func (apiCg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request
 func (apiCg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJSON(w, http.StatusOK, user)
 }
+
+func (apiCg *apiConfig) handlerGetPostsForUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	posts, err := apiCg.DB.GetPostsForUser(
+		r.Context(), database.GetPostsForUserParams{
+			UserID: user.ID,
+			Limit:  10,
+		})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "get posts faild")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, posts)
+}

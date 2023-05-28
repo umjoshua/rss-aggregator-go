@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -33,8 +34,10 @@ func main() {
 		log.Fatal("Postgress connection error", err)
 	}
 
+	dbConfig := database.New(conn)
+
 	apiCfg := apiConfig{
-		DB: database.New(conn),
+		DB: dbConfig,
 	}
 
 	router := chi.NewRouter()
@@ -56,6 +59,11 @@ func main() {
 	v1router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerFeedCreate))
 	v1router.Get("/feeds", apiCfg.handlerGetFeeds)
 
+	v1router.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
+	v1router.Post("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerCreateFeedFollow))
+	v1router.Delete("/feed_follows/{feedFollowId}", apiCfg.middlewareAuth(apiCfg.handlerDeleteFeedFollow))
+	v1router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsForUser))
+
 	router.Mount("/v1", v1router)
 
 	srv := &http.Server{
@@ -64,9 +72,14 @@ func main() {
 	}
 
 	fmt.Println("Server is starting on port", port)
-	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatal("Server couldn't start")
 	}
 
+	go startScraping(dbConfig, 10, time.Minute)
+
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Fatal("Server couldn't start")
+	}
 }
