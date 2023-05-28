@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -56,6 +57,7 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 
 		if item.Description != "" {
 			description.String = item.Description
+			description.Valid = true
 		}
 
 		pubAt, err := time.Parse(time.RFC1123Z, item.PubDate)
@@ -109,6 +111,7 @@ func fetchFeed(feedUrl string) (*RSSFeed, error) {
 		Timeout: time.Second * 10,
 	}
 	data, err := httpClient.Get(feedUrl)
+	fmt.Println(data)
 
 	if err != nil {
 		return nil, err
